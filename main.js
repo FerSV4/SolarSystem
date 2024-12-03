@@ -36,7 +36,7 @@ camera.add(listener);
 const sound = new THREE.Audio(listener);
 const audioLoader = new THREE.AudioLoader();
 
-audioLoader.load('assets/GlorySound.mp3', (buffer) => {
+audioLoader.load('assets/SpaceSound.mp3', (buffer) => {
   sound.setBuffer(buffer);
   sound.setLoop(true); 
   sound.setVolume(0.5);
