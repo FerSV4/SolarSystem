@@ -1,4 +1,3 @@
-// Importar librerías de Three.js y módulos necesarios
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
@@ -40,33 +39,32 @@ audioLoader.load('assets/SpaceSound.mp3', (buffer) => {
   sound.setBuffer(buffer);
   sound.setLoop(true); 
   sound.setVolume(0.5);
-  // sound.play(); // No reproducir automáticamente
 });
 
-// Interfaz gráfica para ajustar la velocidad, reemplazar planetas y controlar la música
+// Interfaz para ajustar la velocidad, reemplazar planetas y música
 const gui = new GUI();
 const options = {
   speed: 0.01,
-  replacePlanets: false,
+  reemplazarPlaneta: false,
   playMusic: false,
 };
 gui.add(options, 'speed', 0.00, 1).name('Velocidad');
-const replacePlanetsController = gui.add(options, 'replacePlanets').name('Reemplazar Planetas');
+const replacePlanetsController = gui.add(options, 'reemplazarPlaneta').name('Reemplazar Planetas');
 gui.add(options, 'playMusic').name('Reproducir Música');
 
 // Variables para controlar la animación
 let angle = 0;
-let modelsLoaded = false;
-let isLoading = false;
-let previousReplacePlanets = options.replacePlanets;
+let Modelocargado = false;
+let estaCargando = false;
+let planetaorigen = options.reemplazarPlaneta;
 let previousPlayMusic = options.playMusic;
 
-// Cargar textura de fondo estelar
+// Cargar fondo
 const loader = new THREE.TextureLoader();
 const background_texture = loader.load('textures/2k_stars.jpg');
 scene.background = background_texture;
 
-// Arrays para planetas, tamaños, texturas, distancias y velocidades
+// Arrays
 const planets = [];
 const modelPlanets = [];
 const planetSizes = [0.39, 0.95, 1, 0.53, 11, 9.1, 3.9, 4];
@@ -83,29 +81,15 @@ const textures = [
 const distances = [20, 35, 50, 75, 110, 140, 170, 190];
 const speeds = [0.2, 0.1, 0.05, 0.04, 0.01, 0.008, 0.006, 0.004];
 
-// Cargar el modelo 3D para reemplazar los planetas
+// Cargar el modelo 3D 
 const mtlLoader = new MTLLoader();
 const objLoader = new OBJLoader();
 
-// Ruta a tus archivos .mtl y .obj
+//.mtl y .obj
 const mtlPath = 'Amaina-chan/ROOMITEMS015_ALL.mtl';
 const objPath = 'Amaina-chan/ROOMITEMS015_ALL.obj';
 
-// Contenedor para el mensaje de carga
-const loadingDiv = document.createElement('div');
-loadingDiv.style.position = 'absolute';
-loadingDiv.style.top = '50%';
-loadingDiv.style.left = '50%';
-loadingDiv.style.transform = 'translate(-50%, -50%)';
-loadingDiv.style.padding = '20px';
-loadingDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-loadingDiv.style.color = '#fff';
-loadingDiv.style.fontSize = '20px';
-loadingDiv.style.display = 'none'; // Oculto por defecto
-loadingDiv.innerText = 'Cargando modelos 3D, por favor espera...';
-document.body.appendChild(loadingDiv);
-
-// Crear los planetas iniciales (esferas con texturas)
+// Crear los planetas
 for (let i = 0; i < planetSizes.length; i++) {
   const geo = new THREE.SphereGeometry(planetSizes[i], 32, 32);
   const mat = new THREE.MeshLambertMaterial({ map: loader.load(textures[i]) });
@@ -114,21 +98,21 @@ for (let i = 0; i < planetSizes.length; i++) {
   if (i === 5) { // Saturno
     const ringGeometry = new THREE.RingGeometry(planetSizes[i] * 1.2, planetSizes[i] * 2.0, 32);
     const ringMaterial = new THREE.MeshBasicMaterial({
-      map: loader.load('textures/saturnRing.png'), // Textura del anillo con transparencia
+      map: loader.load('textures/saturnRing.png'),
       side: THREE.DoubleSide,
       transparent: true,
     });
     const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
-    ringMesh.rotation.x = Math.PI / 2; // Orientar el anillo en el plano correcto
+    ringMesh.rotation.x = Math.PI / 2; // Orientar el anillo en el plano
     ringMesh.position.set(0, 0, 0); // Centrar el anillo
-    mesh.add(ringMesh); // Añadir el anillo como hijo de Saturno
+    mesh.add(ringMesh); // Añadir el anillo
   }
   
   scene.add(mesh);
   planets.push(mesh);
 }
 
-// Añadir luz puntual en el centro (Sol)
+// Añadir luz puntual en el centro 
 const light = new THREE.PointLight(0xffe9b1, 10000, 1000);
 light.position.set(0, 0, 0);
 scene.add(light);
@@ -145,42 +129,37 @@ const sun = new THREE.Mesh(sunGeo, sunMat);
 scene.add(sun);
 
 // Función para reemplazar los planetas con el modelo 3D
-function replacePlanets() {
-  if (modelsLoaded) {
-    // Mostrar modelos 3D y ocultar planetas originales
+function reemplazarPlaneta() {
+  if (Modelocargado) {
     for (let i = 0; i < planets.length; i++) {
       planets[i].visible = false;
       modelPlanets[i].visible = true;
     }
-  } else if (!isLoading) {
-    isLoading = true;
-    loadingDiv.style.display = 'block'; // Mostrar mensaje de carga
+  } else if (!estaCargando) {
+    estaCargando = true;
 
-    // Cargar y crear los modelos 3D para cada planeta
+    //Cargar planeta y modelo
     for (let i = 0; i < planetSizes.length; i++) {
       mtlLoader.load(mtlPath, (materials) => {
         materials.preload();
         objLoader.setMaterials(materials);
         objLoader.load(objPath, (object) => {
-          // Ajustar la escala del modelo según el tamaño deseado
+          // Ajustar la escala
           const scaleValue = planetSizes[i];
           object.scale.set(scaleValue, scaleValue, scaleValue);
           object.position.copy(planets[i].position);
 
-          // Añadir el modelo a la escena y al array
+          // Añadir el modelo al array
           scene.add(object);
           modelPlanets.push(object);
 
-          // Ocultar el modelo hasta que se active la opción
-          object.visible = false;
-
-          // Verificar si todos los modelos han sido cargados
+          // Ocultar el modelo hasta que se active
+          object.visible = false
           if (modelPlanets.length === planetSizes.length) {
-            modelsLoaded = true;
-            isLoading = false;
-            loadingDiv.style.display = 'none'; // Ocultar mensaje de carga
+            Modelocargado = true;
+            estaCargando = false;
+            loadingDiv.style.display = 'cargando';
 
-            // Ocultar planetas originales y mostrar modelos 3D
             for (let j = 0; j < planets.length; j++) {
               planets[j].visible = false;
               modelPlanets[j].visible = true;
@@ -192,12 +171,12 @@ function replacePlanets() {
   }
 }
 
-// Función para restaurar los planetas originales
+//restaurar los planetas
 function restorePlanets() {
   for (let i = 0; i < planets.length; i++) {
     planets[i].visible = true;
   }
-  if (modelsLoaded) {
+  if (Modelocargado) {
     for (let i = 0; i < modelPlanets.length; i++) {
       modelPlanets[i].visible = false;
     }
@@ -208,24 +187,23 @@ function restorePlanets() {
 function animate() {
   requestAnimationFrame(animate);
 
-  // Verificar cambios en `playMusic`
   if (options.playMusic !== previousPlayMusic) {
     if (options.playMusic) {
       sound.play();
     } else {
-      sound.pause(); // Pausar la música
+      sound.pause(); // Pausa
     }
     previousPlayMusic = options.playMusic;
   }
 
-  // Verificar cambios en `replacePlanets`
-  if (options.replacePlanets !== previousReplacePlanets) {
-    if (options.replacePlanets) {
-      replacePlanets();
+  // Verificar cambios en `reemplazarPlaneta`
+  if (options.reemplazarPlaneta !== planetaorigen) {
+    if (options.reemplazarPlaneta) {
+      reemplazarPlaneta();
     } else {
       restorePlanets();
     }
-    previousReplacePlanets = options.replacePlanets;
+    planetaorigen = options.reemplazarPlaneta;
   }
 
   // Animar planetas originales
