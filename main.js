@@ -57,7 +57,7 @@ let angle = 0;
 let Modelocargado = false;
 let estaCargando = false;
 let planetaorigen = options.reemplazarPlaneta;
-let previousPlayMusic = options.playMusic;
+let PrevMusic = options.playMusic;
 
 // Cargar fondo
 const loader = new THREE.TextureLoader();
@@ -66,7 +66,7 @@ scene.background = background_texture;
 
 // Arrays
 const planets = [];
-const modelPlanets = [];
+const ModeloPlaneta = [];
 const planetSizes = [0.39, 0.95, 1, 0.53, 11, 9.1, 3.9, 4];
 const textures = [
   'textures/2k_mercury.jpg',
@@ -133,7 +133,7 @@ function reemplazarPlaneta() {
   if (Modelocargado) {
     for (let i = 0; i < planets.length; i++) {
       planets[i].visible = false;
-      modelPlanets[i].visible = true;
+      ModeloPlaneta[i].visible = true;
     }
   } else if (!estaCargando) {
     estaCargando = true;
@@ -151,18 +151,18 @@ function reemplazarPlaneta() {
 
           // Añadir el modelo al array
           scene.add(object);
-          modelPlanets.push(object);
+          ModeloPlaneta.push(object);
 
           // Ocultar el modelo hasta que se active
           object.visible = false
-          if (modelPlanets.length === planetSizes.length) {
+          if (ModeloPlaneta.length === planetSizes.length) {
             Modelocargado = true;
             estaCargando = false;
             loadingDiv.style.display = 'cargando';
 
             for (let j = 0; j < planets.length; j++) {
               planets[j].visible = false;
-              modelPlanets[j].visible = true;
+              ModeloPlaneta[j].visible = true;
             }
           }
         });
@@ -172,13 +172,13 @@ function reemplazarPlaneta() {
 }
 
 //restaurar los planetas
-function restorePlanets() {
+function restPlanetas() {
   for (let i = 0; i < planets.length; i++) {
     planets[i].visible = true;
   }
   if (Modelocargado) {
-    for (let i = 0; i < modelPlanets.length; i++) {
-      modelPlanets[i].visible = false;
+    for (let i = 0; i < ModeloPlaneta.length; i++) {
+      ModeloPlaneta[i].visible = false;
     }
   }
 }
@@ -187,13 +187,13 @@ function restorePlanets() {
 function animate() {
   requestAnimationFrame(animate);
 
-  if (options.playMusic !== previousPlayMusic) {
+  if (options.playMusic !== PrevMusic) {
     if (options.playMusic) {
       sound.play();
     } else {
       sound.pause(); // Pausa
     }
-    previousPlayMusic = options.playMusic;
+    PrevMusic = options.playMusic;
   }
 
   // Verificar cambios en `reemplazarPlaneta`
@@ -201,7 +201,7 @@ function animate() {
     if (options.reemplazarPlaneta) {
       reemplazarPlaneta();
     } else {
-      restorePlanets();
+      restPlanetas();
     }
     planetaorigen = options.reemplazarPlaneta;
   }
@@ -216,11 +216,11 @@ function animate() {
   }
 
   // Animar modelos 3D de planetas
-  for (let i = 0; i < modelPlanets.length; i++) {
-    if (modelPlanets[i].visible) {
-      modelPlanets[i].position.x = distances[i] * Math.cos(angle * speeds[i]);
-      modelPlanets[i].position.z = distances[i] * Math.sin(angle * speeds[i]);
-      modelPlanets[i].rotation.y += 0.01;
+  for (let i = 0; i < ModeloPlaneta.length; i++) {
+    if (ModeloPlaneta[i].visible) {
+      ModeloPlaneta[i].position.x = distances[i] * Math.cos(angle * speeds[i]);
+      ModeloPlaneta[i].position.z = distances[i] * Math.sin(angle * speeds[i]);
+      ModeloPlaneta[i].rotation.y += 0.01;
     }
   }
 
