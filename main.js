@@ -13,20 +13,53 @@ const camera = new THREE.PerspectiveCamera(
   0.1, 
   1000
 );
+
 camera.position.set(0, 200, 0);
 camera.rotation.x = -Math.PI / 2;
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
-// Posiciona el canvas correctamente
+
 renderer.domElement.style.position = 'absolute';
 renderer.domElement.style.top = '0';
 renderer.domElement.style.left = '0';
 document.body.appendChild(renderer.domElement);
 
-// Controles de órbita y ayudas visuales
+// Controles de órbita
 const orbit = new OrbitControls(camera, renderer.domElement);
 orbit.update();
+
+// Configurar el audio
+const listener = new THREE.AudioListener();
+camera.add(listener);
+
+const sound = new THREE.Audio(listener);
+const audioLoader = new THREE.AudioLoader();
+
+audioLoader.load('assets/GlorySound.mp3', (buffer) => {
+  sound.setBuffer(buffer);
+  sound.setLoop(true); 
+  sound.setVolume(0.5);
+  // sound.play(); // No reproducir automáticamente
+});
+
+// Interfaz gráfica para ajustar la velocidad, reemplazar planetas y controlar la música
+const gui = new GUI();
+const options = {
+  speed: 0.01,
+  replacePlanets: false,
+  playMusic: false,
+};
+gui.add(options, 'speed', 0.00, 1).name('Velocidad');
+const replacePlanetsController = gui.add(options, 'replacePlanets').name('Reemplazar Planetas');
+gui.add(options, 'playMusic').name('Reproducir Música');
+
+// Variables para controlar la animación
+let angle = 0;
+let modelsLoaded = false;
+let isLoading = false;
+let previousReplacePlanets = options.replacePlanets;
+let previousPlayMusic = options.playMusic;
 
 // Cargar textura de fondo estelar
 const loader = new THREE.TextureLoader();
@@ -50,45 +83,6 @@ const textures = [
 const distances = [20, 35, 50, 75, 110, 140, 170, 190];
 const speeds = [0.2, 0.1, 0.05, 0.04, 0.01, 0.008, 0.006, 0.004];
 
-// Crear los planetas iniciales (esferas con texturas)
-for (let i = 0; i < planetSizes.length; i++) {
-  const geo = new THREE.SphereGeometry(planetSizes[i], 32, 32);
-  const mat = new THREE.MeshLambertMaterial({ map: loader.load(textures[i]) });
-  const mesh = new THREE.Mesh(geo, mat);
-  scene.add(mesh);
-  planets.push(mesh);
-}
-
-// Añadir luz puntual en el centro (Sol)
-const light = new THREE.PointLight(0xffe9b1, 10000, 1000);
-light.position.set(0, 0, 0);
-scene.add(light);
-
-// Crear el Sol
-const sunGeo = new THREE.SphereGeometry(15, 32, 32);
-const sunMat = new THREE.MeshStandardMaterial({
-  map: loader.load('textures/2k_sun.jpg'),
-  emissive: 0xf08f2a,
-  emissiveMap: loader.load('textures/2k_sun.jpg'),
-  emissiveIntensity: 1.5,
-});
-const sun = new THREE.Mesh(sunGeo, sunMat);
-scene.add(sun);
-
-// Interfaz gráfica para ajustar la velocidad y reemplazar planetas
-const gui = new GUI();
-const options = {
-  speed: 0.01,
-  replacePlanets: false
-};
-gui.add(options, 'speed', 0.00, 1).name('Velocidad');
-gui.add(options, 'replacePlanets').name('Reemplazar Planetas');
-
-let angle = 0;
-let modelsLoaded = false;
-let isLoading = false;
-let previousReplacePlanets = options.replacePlanets;
-
 // Cargar el modelo 3D para reemplazar los planetas
 const mtlLoader = new MTLLoader();
 const objLoader = new OBJLoader();
@@ -111,6 +105,45 @@ loadingDiv.style.display = 'none'; // Oculto por defecto
 loadingDiv.innerText = 'Cargando modelos 3D, por favor espera...';
 document.body.appendChild(loadingDiv);
 
+// Crear los planetas iniciales (esferas con texturas)
+for (let i = 0; i < planetSizes.length; i++) {
+  const geo = new THREE.SphereGeometry(planetSizes[i], 32, 32);
+  const mat = new THREE.MeshLambertMaterial({ map: loader.load(textures[i]) });
+  const mesh = new THREE.Mesh(geo, mat);
+  
+  if (i === 5) { // Saturno
+    const ringGeometry = new THREE.RingGeometry(planetSizes[i] * 1.2, planetSizes[i] * 2.0, 32);
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      map: loader.load('textures/saturnRing.png'), // Textura del anillo con transparencia
+      side: THREE.DoubleSide,
+      transparent: true,
+    });
+    const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+    ringMesh.rotation.x = Math.PI / 2; // Orientar el anillo en el plano correcto
+    ringMesh.position.set(0, 0, 0); // Centrar el anillo
+    mesh.add(ringMesh); // Añadir el anillo como hijo de Saturno
+  }
+  
+  scene.add(mesh);
+  planets.push(mesh);
+}
+
+// Añadir luz puntual en el centro (Sol)
+const light = new THREE.PointLight(0xffe9b1, 10000, 1000);
+light.position.set(0, 0, 0);
+scene.add(light);
+
+// Crear el Sol
+const sunGeo = new THREE.SphereGeometry(15, 32, 32);
+const sunMat = new THREE.MeshStandardMaterial({
+  map: loader.load('textures/2k_sun.jpg'),
+  emissive: 0xf08f2a,
+  emissiveMap: loader.load('textures/2k_sun.jpg'),
+  emissiveIntensity: 1.5,
+});
+const sun = new THREE.Mesh(sunGeo, sunMat);
+scene.add(sun);
+
 // Función para reemplazar los planetas con el modelo 3D
 function replacePlanets() {
   if (modelsLoaded) {
@@ -129,7 +162,7 @@ function replacePlanets() {
         materials.preload();
         objLoader.setMaterials(materials);
         objLoader.load(objPath, (object) => {
-          // Ajustar la escala del modelo según el tamaño del planeta
+          // Ajustar la escala del modelo según el tamaño deseado
           const scaleValue = planetSizes[i];
           object.scale.set(scaleValue, scaleValue, scaleValue);
           object.position.copy(planets[i].position);
@@ -174,6 +207,16 @@ function restorePlanets() {
 // Función de animación
 function animate() {
   requestAnimationFrame(animate);
+
+  // Verificar cambios en `playMusic`
+  if (options.playMusic !== previousPlayMusic) {
+    if (options.playMusic) {
+      sound.play();
+    } else {
+      sound.pause(); // Pausar la música
+    }
+    previousPlayMusic = options.playMusic;
+  }
 
   // Verificar cambios en `replacePlanets`
   if (options.replacePlanets !== previousReplacePlanets) {
